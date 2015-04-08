@@ -1,6 +1,6 @@
 # minisql
 
-Implementation of Basic sql operators
+Implementation of Basic SQL operators - A Database Systems assignment
 
 ````
 python minisql.py members.csv members2.csv
