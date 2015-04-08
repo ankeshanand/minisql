@@ -2,6 +2,12 @@ __author__ = 'ankesh'
 import sys
 import csv
 
+class Clause():
+    def __init__(self):
+        self.operand1 = ''
+        self.operator = ''
+        self.operand2 = ''
+
 class DBTable():
     def __init__(self):
         self.columnNames = []
@@ -99,6 +105,16 @@ class DBTable():
                     print rec[col] + '|',
                 print
 
+    def selection(self,clause):
+        result = DBTable()
+        result.columnNames = self.columnNames
+        if clause.operator == '=':
+            for rec in self.records:
+                if rec[clause.operand1] == clause.operand2:
+                    result.records.append(rec)
+        return result
+
+
 tables = []
 tables_dict = {}
 
@@ -124,7 +140,7 @@ def process_query(query):
                     return result
         elif 'CROSS' in tokens:
             for i,token in enumerate(tokens):
-                if token == 'MINUS':
+                if token == 'CROSS':
                     table1 = process_query(' '.join(tokens[:i]))
                     table2 = process_query(' '.join(tokens[i+1:]))
                     table1.cartesianProduct(table2)
@@ -139,6 +155,15 @@ def process_query(query):
             cols = tables[table_no].columnNames
         else:
             cols = cols.split(',')
+        if 'WHERE' in tokens:
+            for i,t in enumerate(tokens):
+                if t == 'WHERE':
+                    c = Clause()
+                    c.operand1 = tokens[i+1]
+                    c.operator = tokens[i+2]
+                    c.operand2 = tokens[i+3]
+                    result = tables[table_no].selection(c)
+                    return result.projection(cols)
         return tables[table_no].projection(cols)
 
 
@@ -150,7 +175,6 @@ if __name__ == '__main__':
         dot_pos = sys.argv[i].find('.')
         table_name = sys.argv[i][:dot_pos]
         tables_dict[table_name] = i-1
-
     for i, file in enumerate(files):
         with open(file, 'rb') as f:
             reader = csv.reader(f)
@@ -162,6 +186,9 @@ if __name__ == '__main__':
                     for n, col in enumerate(tables[i].columnNames):
                         rec[col] = row[n]
                     tables[i].records.append(rec)
+        print
+        print "Printing Table " + str(i+1)
+        tables[i].printTable()
             # tables[i].select(['First', 'Last'])
     # tables[0].union(tables[1])
     # tables[0].setDifference(tables[1])
