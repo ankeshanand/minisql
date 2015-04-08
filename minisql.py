@@ -10,10 +10,7 @@ class DBTable():
     def projection(self, columns):
         try:
             for col in columns:
-                if col in self.columnNames:
-                    print col + ',',
-                else:
-                    print
+                if col not in self.columnNames:
                     raise ValueError('Invalid column name. Exiting.')
         except ValueError as e:
             print e
@@ -25,13 +22,7 @@ class DBTable():
             for col in columns:
                 result_rec[col] = rec[col]
             result.records.append(result_rec)
-        print
-        print '-----------------------------'
-        for rec in self.records:
-            for col in columns:
-                print rec[col] + ',',
-            print
-
+        return result
 
     def union(self, table2):
         """
@@ -97,29 +88,68 @@ class DBTable():
 
     def printTable(self, columns=True):
         if columns:
+            line_len = 0
             for col in self.columnNames:
-                print col + ',',
+                line_len += len(col)
+                print col + '|',
             print
+            print '-' * line_len
             for rec in self.records:
                 for col in self.columnNames:
-                    print rec[col] + ',',
+                    print rec[col] + '|',
                 print
 
+tables = []
+tables_dict = {}
 
 def process_query(query):
-    pass
+    tokens = query.split(' ')
+    keywords = ['UNION','MINUS','CROSS']
+    if any(x in query for x in keywords):
+        if 'UNION' in tokens:
+            for i,token in enumerate(tokens):
+                if token == 'UNION':
+                    table1 = process_query(' '.join(tokens[:i]))
+                    table2 = process_query(' '.join(tokens[i+1:]))
+                    table1.union(table2)
+                    result = DBTable()
+                    return result
+        elif 'MINUS' in tokens:
+            for i,token in enumerate(tokens):
+                if token == 'MINUS':
+                    table1 = process_query(' '.join(tokens[:i]))
+                    table2 = process_query(' '.join(tokens[i+1:]))
+                    table1.setDifference(table2)
+                    result = DBTable()
+                    return result
+        elif 'CROSS' in tokens:
+            for i,token in enumerate(tokens):
+                if token == 'MINUS':
+                    table1 = process_query(' '.join(tokens[:i]))
+                    table2 = process_query(' '.join(tokens[i+1:]))
+                    table1.cartesianProduct(table2)
+                    result = DBTable()
+                    return result
+
+                    
+    else:
+        cols = tokens[1]
+        table_no = tables_dict[tokens[3]]
+        if cols == '*':
+            cols = tables[table_no].columnNames
+        else:
+            cols = cols.split(',')
+        return tables[table_no].projection(cols)
 
 
 if __name__ == '__main__':
     files = ['data/'+x for x in sys.argv]
     del files[0]
-    print files
     tables = [DBTable() for f in files]
-    tables_dict = {}
     for i in range(1, len(sys.argv)):
         dot_pos = sys.argv[i].find('.')
         table_name = sys.argv[i][:dot_pos]
-        tables_dict[table_name] = i
+        tables_dict[table_name] = i-1
 
     for i, file in enumerate(files):
         with open(file, 'rb') as f:
