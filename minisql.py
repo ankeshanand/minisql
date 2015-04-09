@@ -2,18 +2,33 @@ __author__ = 'ankesh'
 import sys
 import csv
 
+
 class Clause():
+    """
+    A Class for WHERE clauses
+    """
     def __init__(self):
         self.operand1 = ''
         self.operator = ''
         self.operand2 = ''
 
+
 class DBTable():
+    """
+    A Class for Database tables
+    """
     def __init__(self):
         self.columnNames = []
-        self.records = []
+        self.records = []   # A list of dictionaries
 
     def projection(self, columns):
+        """
+        Return the projection of a table on a list of columns.
+        :param columns: list of columns to project on
+        :return: A DBTable object
+        """
+
+        # Check if the supplied column names are valid.
         try:
             for col in columns:
                 if col not in self.columnNames:
@@ -100,12 +115,17 @@ class DBTable():
                 print col + '|',
             print
             print '-' * line_len
-            for rec in self.records:
-                for col in self.columnNames:
-                    print rec[col] + '|',
-                print
+        for rec in self.records:
+            for col in self.columnNames:
+                print rec[col] + '|',
+            print
 
-    def selection(self,clause):
+    def selection(self, clause):
+        """
+        Return a DBTable containing the set of records that satisy the clause.
+        :param clause: A Clause object.
+        :return: A DBTable object
+        """
         result = DBTable()
         result.columnNames = self.columnNames
         if clause.operator == '=':
@@ -118,7 +138,16 @@ class DBTable():
 tables = []
 tables_dict = {}
 
+
 def process_query(query):
+    """
+    All the queries come in here to get parsed.
+    If the query has UNION, MINUS or the CROSS keyword,
+    then it is split into two and processed individually.
+    The result of the both the individual queries are then combined.
+    :param query:
+    :return:
+    """
     tokens = query.split(' ')
     keywords = ['UNION','MINUS','CROSS']
     if any(x in query for x in keywords):
@@ -149,6 +178,7 @@ def process_query(query):
 
                     
     else:
+        # Query without the keywords UNION, MINUS or CROSS
         cols = tokens[1]
         table_no = tables_dict[tokens[3]]
         if cols == '*':
@@ -168,13 +198,17 @@ def process_query(query):
 
 
 if __name__ == '__main__':
-    files = ['data/'+x for x in sys.argv]
-    del files[0]
-    tables = [DBTable() for f in files]
+    files = ['data/'+x for x in sys.argv]   # files list now contains the exact location of all the files
+    del files[0]    # The first command line arg was minisql.py itself, so ignore that
+    tables = [DBTable() for f in files]  # Create a DB table object corresponding to each file
+
+    # Store a mapping from table name to its index in 'tables' list
     for i in range(1, len(sys.argv)):
         dot_pos = sys.argv[i].find('.')
         table_name = sys.argv[i][:dot_pos]
         tables_dict[table_name] = i-1
+
+    # Read each file and store it's data in the corresponding DBTable object from the tables list
     for i, file in enumerate(files):
         with open(file, 'rb') as f:
             reader = csv.reader(f)
@@ -189,11 +223,9 @@ if __name__ == '__main__':
         print
         print "Printing Table " + str(i+1)
         tables[i].printTable()
-            # tables[i].select(['First', 'Last'])
-    # tables[0].union(tables[1])
-    # tables[0].setDifference(tables[1])
-    # tables[0].cartesianProduct(tables[1])
-    while(True):
+
+    # Take queries as input and process them
+    while True:
         print '>',
         query = raw_input()
         result = process_query(query)

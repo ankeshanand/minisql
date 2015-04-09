@@ -1,0 +1,5 @@
+# Ignore Bytecode files
+*.pyc
+
+# Temporary files
+*~
